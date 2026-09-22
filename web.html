@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Buku Kas — Pencatat Keuangan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #EDE8DA;
+    --paper-2: #E4DDC9;
+    --ink: #24321F;
+    --ink-soft: #5B6350;
+    --rule: #C7BC9E;
+    --rule-strong: #A99C79;
+    --green: #2F6F4E;
+    --green-bg: #DCE8DD;
+    --red: #A23B33;
+    --red-bg: #EEDCD6;
+    --gold: #A87C2A;
+    --card: #F5F1E4;
+    --shadow: rgba(36, 50, 31, 0.12);
+    color-scheme: light;
+  }
+
+  :root:not([data-theme="light"]) {
+    @media (prefers-color-scheme: dark) {
+      --paper: #1B1E17;
+      --paper-2: #22261D;
+      --ink: #E9E4D4;
+      --ink-soft: #A6A489;
+      --rule: #3B3F30;
+      --rule-strong: #4E5340;
+      --green: #7CBE94;
+      --green-bg: #263129;
+      --red: #D98D82;
+      --red-bg: #33241F;
+      --gold: #D2A94F;
+      --card: #22261D;
+      --shadow: rgba(0, 0, 0, 0.4);
+      color-scheme: dark;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --paper: #1B1E17;
+    --paper-2: #22261D;
+    --ink: #E9E4D4;
+    --ink-soft: #A6A489;
+    --rule: #3B3F30;
+    --rule-strong: #4E5340;
+    --green: #7CBE94;
+    --green-bg: #263129;
+    --red: #D98D82;
+    --red-bg: #33241F;
+    --gold: #D2A94F;
+    --card: #22261D;
+    --shadow: rgba(0, 0, 0, 0.4);
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+
+  html {
+    scroll-padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', -apple-system, sans-serif;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    min-height: 100%;
+  }
+
+  .wrap {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+
+  header.masthead {
+    border-bottom: 3px double var(--rule-strong);
+    padding-bottom: 20px;
+    margin-bottom: 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  header.masthead h1 {
+    font-family: 'Source Serif 4', serif;
+    font-weight: 700;
+    font-size: clamp(28px, 4vw, 40px);
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+
+  header.masthead .tanggal {
+    font-family: 'Source Serif 4', serif;
+    font-style: italic;
+    color: var(--ink-soft);
+    font-size: 15px;
+  }
+
+  /* summary strip */
+  .summary {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    margin-bottom: 36px;
+  }
+
+  .summary .cell {
+    background: var(--card);
+    padding: 18px 20px;
+  }
+
+  .summary .cell .label {
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+  }
+
+  .summary .cell .val {
+    font-family: 'Source Serif 4', serif;
+    font-size: clamp(19px, 2.6vw, 26px);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .summary .cell.saldo .val.positif { color: var(--green); }
+  .summary .cell.saldo .val.negatif { color: var(--red); }
+  .summary .cell.masuk .val { color: var(--green); }
+  .summary .cell.keluar .val { color: var(--red); }
+
+  /* layout: form + ledger */
+  .grid {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 32px;
+  }
+
+  @media (max-width: 780px) {
+    .grid { grid-template-columns: 1fr; }
+    .summary { grid-template-columns: 1fr; }
+  }
+
+  .panel-title {
+    font-family: 'Source Serif 4', serif;
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0 0 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  /* form */
+  form#entry-form {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    padding: 20px;
+    height: fit-content;
+  }
+
+  .toggle-jenis {
+    display: flex;
+    border: 1px solid var(--rule-strong);
+    margin-bottom: 16px;
+  }
+
+  .toggle-jenis button {
+    flex: 1;
+    padding: 9px 0;
+    background: transparent;
+    border: none;
+    font-family: 'Inter', sans-serif;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    cursor: pointer;
+  }
+
+  .toggle-jenis button:first-child { border-right: 1px solid var(--rule-strong); }
+
+  .toggle-jenis button.active[data-jenis="pemasukan"] { background: var(--green-bg); color: var(--green); }
+  .toggle-jenis button.active[data-jenis="pengeluaran"] { background: var(--red-bg); color: var(--red); }
+
+  .field { margin-bottom: 14px; }
+
+  .field label {
+    display: block;
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    margin-bottom: 5px;
+  }
+
+  .field input, .field select {
+    width: 100%;
+    padding: 9px 10px;
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+  }
+
+  .field input:focus, .field select:focus, button:focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: 1px;
+  }
+
+  .field .rp-prefix {
+    position: relative;
+  }
+
+  .field .rp-prefix span {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--ink-soft);
+    font-size: 14px;
+    pointer-events: none;
+  }
+
+  .field .rp-prefix input { padding-left: 34px; }
+
+  button.submit-btn {
+    width: 100%;
+    padding: 11px 0;
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    margin-top: 4px;
+  }
+
+  button.submit-btn:hover { background: var(--gold); color: var(--ink); }
+
+  /* ledger table */
+  .ledger-controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .ledger-controls input, .ledger-controls select {
+    padding: 7px 10px;
+    border: 1px solid var(--rule);
+    background: var(--card);
+    color: var(--ink);
+    font-size: 13px;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .ledger-controls input { flex: 1; }
+
+  .ledger-scroll {
+    overflow-x: auto;
+    border: 1px solid var(--rule);
+  }
+
+  table.ledger {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+    min-width: 560px;
+  }
+
+  table.ledger thead th {
+    text-align: left;
+    font-weight: 600;
+    font-size: 12px;
+    color: var(--ink-soft);
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--rule-strong);
+    background: var(--paper-2);
+  }
+
+  table.ledger tbody td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--rule);
+    font-variant-numeric: tabular-nums;
+    vertical-align: top;
+  }
+
+  table.ledger tbody tr:last-child td { border-bottom: none; }
+
+  table.ledger .jumlah.masuk { color: var(--green); font-weight: 600; }
+  table.ledger .jumlah.keluar { color: var(--red); font-weight: 600; }
+
+  table.ledger .ket { color: var(--ink-soft); }
+
+  .del-btn {
+    background: none;
+    border: 1px solid var(--rule);
+    color: var(--ink-soft);
+    font-size: 12px;
+    padding: 3px 8px;
+    cursor: pointer;
+  }
+  .del-btn:hover { border-color: var(--red); color: var(--red); }
+
+  .empty-state {
+    padding: 40px 20px;
+    text-align: center;
+    color: var(--ink-soft);
+    font-family: 'Source Serif 4', serif;
+    font-style: italic;
+  }
+
+  /* monthly trend chart */
+  .trend {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    padding: 20px;
+    margin-bottom: 36px;
+  }
+
+  .trend-legend {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 4px;
+    font-size: 12.5px;
+    color: var(--ink-soft);
+  }
+
+  .trend-legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .trend-legend .dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+
+  .trend-legend .dot.masuk { background: var(--green); }
+  .trend-legend .dot.keluar { background: var(--red); }
+
+  .trend svg { width: 100%; height: auto; display: block; }
+  .trend .grid-line { stroke: var(--rule); stroke-width: 1; }
+  .trend .axis-label { fill: var(--ink-soft); font-size: 11px; font-family: 'Inter', sans-serif; }
+  .trend .line-masuk { fill: none; stroke: var(--green); stroke-width: 2.2; }
+  .trend .line-keluar { fill: none; stroke: var(--red); stroke-width: 2.2; }
+  .trend .dot-masuk { fill: var(--green); }
+  .trend .dot-keluar { fill: var(--red); }
+  .trend .empty-trend { fill: var(--ink-soft); font-style: italic; font-family: 'Source Serif 4', serif; font-size: 13px; }
+
+  /* breakdown chart */
+  .breakdown {
+    margin-top: 32px;
+  }
+
+  .bar-row {
+    display: grid;
+    grid-template-columns: 120px 1fr 90px;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+    font-size: 13px;
+  }
+
+  .bar-row .kat { color: var(--ink-soft); }
+  .bar-row .bar-track {
+    height: 10px;
+    background: var(--paper-2);
+    border: 1px solid var(--rule);
+  }
+  .bar-row .bar-fill {
+    height: 100%;
+    background: var(--red);
+  }
+  .bar-row .amt {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-soft);
+  }
+
+  footer {
+    margin-top: 48px;
+    padding-top: 16px;
+    border-top: 1px solid var(--rule);
+    font-size: 12px;
+    color: var(--ink-soft);
+    text-align: center;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .cell, table.ledger tbody tr { transition: background 0.15s ease; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+    <h1>Buku Kas</h1>
+    <div class="tanggal" id="tanggal-hari-ini"></div>
+  </header>
+
+  <section class="summary">
+    <div class="cell masuk">
+      <div class="label">Total Pemasukan</div>
+      <div class="val" id="total-masuk">Rp0</div>
+    </div>
+    <div class="cell keluar">
+      <div class="label">Total Pengeluaran</div>
+      <div class="val" id="total-keluar">Rp0</div>
+    </div>
+    <div class="cell saldo">
+      <div class="label">Saldo</div>
+      <div class="val" id="total-saldo">Rp0</div>
+    </div>
+  </section>
+
+  <section class="trend">
+    <h2 class="panel-title" style="border-bottom:none; margin-bottom:8px;">Tren Bulanan</h2>
+    <div class="trend-legend">
+      <span><span class="dot masuk"></span>Pemasukan</span>
+      <span><span class="dot keluar"></span>Pengeluaran</span>
+    </div>
+    <div id="trend-chart"></div>
+  </section>
+
+  <div class="grid">
+    <div>
+      <h2 class="panel-title">Catat Transaksi</h2>
+      <form id="entry-form">
+        <div class="toggle-jenis">
+          <button type="button" data-jenis="pemasukan" class="active">Pemasukan</button>
+          <button type="button" data-jenis="pengeluaran">Pengeluaran</button>
+        </div>
+
+        <div class="field">
+          <label for="kategori">Kategori</label>
+          <input type="text" id="kategori" placeholder="mis. Gaji, Makan, Transport" required>
+        </div>
+
+        <div class="field">
+          <label for="jumlah">Jumlah</label>
+          <div class="rp-prefix">
+            <span>Rp</span>
+            <input type="number" id="jumlah" placeholder="0" min="1" step="1" required>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="keterangan">Keterangan (opsional)</label>
+          <input type="text" id="keterangan" placeholder="Catatan tambahan">
+        </div>
+
+        <button type="submit" class="submit-btn">Simpan Transaksi</button>
+      </form>
+
+      <div class="breakdown" id="breakdown-wrap" style="display:none;">
+        <h2 class="panel-title">Pengeluaran per Kategori</h2>
+        <div id="breakdown-body"></div>
+      </div>
+    </div>
+
+    <div>
+      <h2 class="panel-title">Riwayat Transaksi</h2>
+      <div class="ledger-controls">
+        <input type="text" id="cari" placeholder="Cari kategori atau keterangan...">
+        <select id="filter-jenis">
+          <option value="semua">Semua</option>
+          <option value="pemasukan">Pemasukan</option>
+          <option value="pengeluaran">Pengeluaran</option>
+        </select>
+      </div>
+      <div class="ledger-scroll">
+        <table class="ledger">
+          <thead>
+            <tr>
+              <th>Tanggal</th>
+              <th>Kategori</th>
+              <th>Keterangan</th>
+              <th style="text-align:right;">Jumlah</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="ledger-body"></tbody>
+        </table>
+        <div class="empty-state" id="empty-state" style="display:none;">
+          Belum ada transaksi. Mulai catat di panel sebelah kiri.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>Data tersimpan secara lokal di perangkat ini.</footer>
+</div>
+
+<script>
+  const STORAGE_KEY = 'buku-kas-transaksi';
+  let jenisAktif = 'pemasukan';
+  let transaksi = [];
+
+  function loadData() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      transaksi = raw ? JSON.parse(raw) : [];
+    } catch (e) {
+      console.error('Gagal memuat data', e);
+      transaksi = [];
+    }
+  }
+
+  function saveData() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(transaksi));
+    } catch (e) {
+      console.error('Gagal menyimpan data', e);
+    }
+  }
+
+  function formatRp(n) {
+    return 'Rp' + Math.round(n).toLocaleString('id-ID');
+  }
+
+  function formatTanggal(iso) {
+    const d = new Date(iso);
+    return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) +
+           ' · ' + d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  document.getElementById('tanggal-hari-ini').textContent =
+    new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+  // Toggle jenis
+  document.querySelectorAll('.toggle-jenis button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.toggle-jenis button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      jenisAktif = btn.dataset.jenis;
+    });
+  });
+
+  // Submit form
+  document.getElementById('entry-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const kategori = document.getElementById('kategori').value.trim();
+    const jumlah = parseFloat(document.getElementById('jumlah').value);
+    const keterangan = document.getElementById('keterangan').value.trim();
+
+    if (!kategori || !jumlah || jumlah <= 0) return;
+
+    transaksi.unshift({
+      id: Date.now(),
+      tanggal: new Date().toISOString(),
+      jenis: jenisAktif,
+      kategori,
+      jumlah,
+      keterangan
+    });
+
+    saveData();
+    render();
+    e.target.reset();
+    document.getElementById('kategori').focus();
+  });
+
+  function hapusTransaksi(id) {
+    transaksi = transaksi.filter(t => t.id !== id);
+    saveData();
+    render();
+  }
+
+  document.getElementById('cari').addEventListener('input', render);
+  document.getElementById('filter-jenis').addEventListener('change', render);
+
+  function render() {
+    const cari = document.getElementById('cari').value.toLowerCase();
+    const filterJenis = document.getElementById('filter-jenis').value;
+
+    // Summary (always over all data, not filtered)
+    const totalMasuk = transaksi.filter(t => t.jenis === 'pemasukan').reduce((s, t) => s + t.jumlah, 0);
+    const totalKeluar = transaksi.filter(t => t.jenis === 'pengeluaran').reduce((s, t) => s + t.jumlah, 0);
+    const saldo = totalMasuk - totalKeluar;
+
+    document.getElementById('total-masuk').textContent = formatRp(totalMasuk);
+    document.getElementById('total-keluar').textContent = formatRp(totalKeluar);
+    const saldoEl = document.getElementById('total-saldo');
+    saldoEl.textContent = formatRp(saldo);
+    saldoEl.className = 'val ' + (saldo >= 0 ? 'positif' : 'negatif');
+
+    renderTrendChart();
+
+    // Filtered ledger
+    let filtered = transaksi.filter(t => {
+      const matchCari = !cari || t.kategori.toLowerCase().includes(cari) || (t.keterangan || '').toLowerCase().includes(cari);
+      const matchJenis = filterJenis === 'semua' || t.jenis === filterJenis;
+      return matchCari && matchJenis;
+    });
+
+    const tbody = document.getElementById('ledger-body');
+    const emptyState = document.getElementById('empty-state');
+    tbody.innerHTML = '';
+
+    if (filtered.length === 0) {
+      emptyState.style.display = 'block';
+    } else {
+      emptyState.style.display = 'none';
+      filtered.forEach(t => {
+        const tr = document.createElement('tr');
+        const tanda = t.jenis === 'pemasukan' ? '+' : '−';
+        const kelas = t.jenis === 'pemasukan' ? 'masuk' : 'keluar';
+        tr.innerHTML = `
+          <td>${formatTanggal(t.tanggal)}</td>
+          <td>${escapeHtml(t.kategori)}</td>
+          <td class="ket">${escapeHtml(t.keterangan || '—')}</td>
+          <td style="text-align:right;" class="jumlah ${kelas}">${tanda}${formatRp(t.jumlah)}</td>
+          <td><button class="del-btn" data-id="${t.id}">Hapus</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+      tbody.querySelectorAll('.del-btn').forEach(btn => {
+        btn.addEventListener('click', () => hapusTransaksi(Number(btn.dataset.id)));
+      });
+    }
+
+    // Breakdown per kategori (pengeluaran)
+    const breakdownWrap = document.getElementById('breakdown-wrap');
+    const breakdownBody = document.getElementById('breakdown-body');
+    const kategoriMap = {};
+    transaksi.filter(t => t.jenis === 'pengeluaran').forEach(t => {
+      kategoriMap[t.kategori] = (kategoriMap[t.kategori] || 0) + t.jumlah;
+    });
+    const kategoriArr = Object.entries(kategoriMap).sort((a, b) => b[1] - a[1]);
+
+    if (kategoriArr.length === 0) {
+      breakdownWrap.style.display = 'none';
+    } else {
+      breakdownWrap.style.display = 'block';
+      const maxVal = kategoriArr[0][1];
+      breakdownBody.innerHTML = kategoriArr.map(([kat, val]) => `
+        <div class="bar-row">
+          <div class="kat">${escapeHtml(kat)}</div>
+          <div class="bar-track"><div class="bar-fill" style="width:${(val / maxVal * 100).toFixed(0)}%"></div></div>
+          <div class="amt">${formatRp(val)}</div>
+        </div>
+      `).join('');
+    }
+  }
+
+  function renderTrendChart() {
+    const container = document.getElementById('trend-chart');
+
+    if (transaksi.length === 0) {
+      container.innerHTML = '<svg viewBox="0 0 600 160"><text x="300" y="80" text-anchor="middle" class="empty-trend">Belum ada data untuk ditampilkan</text></svg>';
+      return;
+    }
+
+    // Kelompokkan per bulan (YYYY-MM), ambil 6 bulan terakhir yang ada data
+    const perBulan = {};
+    transaksi.forEach(t => {
+      const d = new Date(t.tanggal);
+      const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+      if (!perBulan[key]) perBulan[key] = { masuk: 0, keluar: 0 };
+      perBulan[key][t.jenis === 'pemasukan' ? 'masuk' : 'keluar'] += t.jumlah;
+    });
+
+    const bulanKeys = Object.keys(perBulan).sort().slice(-6);
+    const namaBulan = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+
+    const width = 600, height = 200, padL = 46, padR = 16, padT = 16, padB = 30;
+    const plotW = width - padL - padR;
+    const plotH = height - padT - padB;
+
+    const maxVal = Math.max(1, ...bulanKeys.map(k => Math.max(perBulan[k].masuk, perBulan[k].keluar)));
+    const stepX = bulanKeys.length > 1 ? plotW / (bulanKeys.length - 1) : 0;
+
+    function yOf(val) { return padT + plotH - (val / maxVal) * plotH; }
+    function xOf(i) { return padL + (bulanKeys.length > 1 ? i * stepX : plotW / 2); }
+
+    const ptsMasuk = bulanKeys.map((k, i) => `${xOf(i)},${yOf(perBulan[k].masuk)}`).join(' ');
+    const ptsKeluar = bulanKeys.map((k, i) => `${xOf(i)},${yOf(perBulan[k].keluar)}`).join(' ');
+
+    // grid lines horizontal (4 garis)
+    let gridLines = '';
+    for (let i = 0; i <= 3; i++) {
+      const y = padT + (plotH / 3) * i;
+      const val = maxVal - (maxVal / 3) * i;
+      gridLines += `<line x1="${padL}" y1="${y}" x2="${width - padR}" y2="${y}" class="grid-line" />`;
+      gridLines += `<text x="${padL - 8}" y="${y + 3}" text-anchor="end" class="axis-label">${formatRpSingkat(val)}</text>`;
+    }
+
+    const labelsX = bulanKeys.map((k, i) => {
+      const [y, m] = k.split('-');
+      const label = namaBulan[parseInt(m, 10) - 1] + " '" + y.slice(2);
+      return `<text x="${xOf(i)}" y="${height - 8}" text-anchor="middle" class="axis-label">${label}</text>`;
+    }).join('');
+
+    const dotsMasuk = bulanKeys.map((k, i) => `<circle cx="${xOf(i)}" cy="${yOf(perBulan[k].masuk)}" r="3.2" class="dot-masuk" />`).join('');
+    const dotsKeluar = bulanKeys.map((k, i) => `<circle cx="${xOf(i)}" cy="${yOf(perBulan[k].keluar)}" r="3.2" class="dot-keluar" />`).join('');
+
+    container.innerHTML = `
+      <svg viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
+        ${gridLines}
+        <polyline points="${ptsMasuk}" class="line-masuk" />
+        <polyline points="${ptsKeluar}" class="line-keluar" />
+        ${dotsMasuk}
+        ${dotsKeluar}
+        ${labelsX}
+      </svg>
+    `;
+  }
+
+  function formatRpSingkat(n) {
+    if (n >= 1000000) return (n / 1000000).toFixed(1).replace('.0', '') + 'jt';
+    if (n >= 1000) return (n / 1000).toFixed(0) + 'rb';
+    return String(Math.round(n));
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  loadData();
+  render();
+</script>
+</body>
+</html>
